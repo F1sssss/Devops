@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafka-preprod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/F1sssss/Devops.git   
+    targetRevision: main
+    path: kafka
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kafka
+  
+  syncPolicy:
+    automated:
+      prune: false      # Don't auto-delete Kafka resources
+      selfHeal: true    # Auto-sync when Git changes
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Critical: Ignore Strimzi-managed status fields
+  ignoreDifferences:
+    - group: kafka.strimzi.io
+      kind: Kafka
+      jsonPointers:
+        - /status
+    - group: kafka.strimzi.io
+      kind: KafkaNodePool
+      jsonPointers:
+        - /status
+    - group: kafka.strimzi.io
+      kind: KafkaTopic
+      jsonPointers:
+        - /status
+    - group: kafka.strimzi.io
+      kind: KafkaUser
+      jsonPointers:
+        - /status
